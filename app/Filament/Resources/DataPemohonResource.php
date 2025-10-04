@@ -43,7 +43,15 @@ class DataPemohonResource extends Resource
 
         // Apply user status access control (same as getEloquentQuery)
         if (!empty($user->allowed_status)) {
-            $query->whereIn('status_permohonan', $user->allowed_status);
+            // Ensure allowed_status is an array
+            $allowedStatus = $user->allowed_status;
+            if (is_string($allowedStatus)) {
+                $allowedStatus = json_decode($allowedStatus, true);
+            }
+
+            if (is_array($allowedStatus) && !empty($allowedStatus)) {
+                $query->whereIn('status_permohonan', $allowedStatus);
+            }
         }
 
         return (string) $query->count();
@@ -535,8 +543,15 @@ class DataPemohonResource extends Resource
 
         // If user has allowed_status configured, filter the data
         if ($user && !empty($user->allowed_status)) {
-            $allowedStatusCodes = $user->allowed_status;
-            $query->whereIn('status_permohonan', $allowedStatusCodes);
+            // Ensure allowed_status is an array
+            $allowedStatus = $user->allowed_status;
+            if (is_string($allowedStatus)) {
+                $allowedStatus = json_decode($allowedStatus, true);
+            }
+
+            if (is_array($allowedStatus) && !empty($allowedStatus)) {
+                $query->whereIn('status_permohonan', $allowedStatus);
+            }
         }
 
         return $query;

@@ -1,0 +1,104 @@
+{
+    "book_number": "2025100200001",
+    "settlement_id": "63",
+    "settlement_name": "TOWER SAMAWA NUANSA PONDOK KELAPA",
+    "bdtime": "2025-10-02 10:30:00",
+    "npwp": "090844465031000",
+    "nik": "3173072208930002",
+    "email_address": "test.api@gmail.com",
+    "name": "TEST API USER",
+    "mobile_phone_number": "081806563006",
+    "job": "Karyawan swasta",
+    "salary": "7880000",
+    "marital_status": "1",
+    "is_couple_dki": false,
+    "couple_id_card_number": null,
+    "couple_name": null,
+    "is_have_booking_kpr_dpnol": true,
+    "unit_type": "Tipe 36",
+    "price": "350000000",
+    "is_valid_npwp": false,
+    "checked_npwp_number": null,
+    "checked_npwp_name": null,
+    "checked_npwp_message": null,
+    "education_id": "3",
+    "education_name": "SLTA",
+    "residence_status_id": "2",
+    "residence_status_name": "Orang Tua",
+    "correspondence_address": "Alamat KTP",
+    "is_domicile_same_with_ektp": "1",
+    "province_id": null,
+    "province_name": "DKI Jakarta",
+    "city_id": null,
+    "city_name": "Jakarta Timur",
+    "district_id": null,
+    "district_name": "Duren Sawit",
+    "village_id": null,
+    "village_name": "Pondok Kelapa",
+    "address": "Jl. Pondok Kelapa Raya No. 123",
+    "is_domicile_same_with_couple": "1",
+    "couple_province_id": null,
+    "couple_province_name": null,
+    "couple_city_id": null,
+    "couple_city_name": null,
+    "couple_district_id": null,
+    "couple_district_name": null,
+    "couple_village_id": null,
+    "couple_village_name": null,
+    "couple_address": "",
+    "couple_job": "",
+    "couple_income": "0",
+    "count_of_vehicle1": "1",
+    "count_of_vehicle2": "0",
+    "is_have_saving_bank": true,
+    "is_have_home_credit": false,
+    "atpid": "2",
+    "atp_name": "Rp 1.500.000 - Rp 2.000.000",
+    "mounthly_expense1": "500000",
+    "mounthly_expense2": "4000000",
+    "bapenda": null,
+    "aset_hunian": [],
+    "reason_of_choose_location": [
+        {
+            "id": 4,
+            "name": "Dekat Transportasi Publik"
+        },
+        {
+            "id": 2,
+            "name": "Dekat Tempat Kerja"
+        }
+    ],
+    "government_assistance_aid": [],
+    "booking_files": [
+        {
+            "fname": "481af878536ed58ee7dadbe18f933767c3dbefac.jpg",
+            "base64": null,
+            "file_type": "KTP"
+        },
+        {
+            "fname": "26945e6cbee887cb937560a00ae299303a3b97b6.jpg",
+            "base64": null,
+            "file_type": "KK"
+        },
+        {
+            "fname": "42fd17c6870d78e1fe3365523cfb76a136cd3f97.jpg",
+            "base64": null,
+            "file_type": "Kartu NPWP"
+        },
+        {
+            "fname": null,
+            "base64": null,
+            "file_type": "Surat Nikah/Akta Cerai/Akta Kematian"
+        },
+        {
+            "fname": null,
+            "base64": null,
+            "file_type": "Surat Belum Mempunyai Rumah"
+        },
+        {
+            "fname": "54b8588debbae50cec418cb532716a31c0b5e913.jpg",
+            "base64": null,
+            "file_type": "Slip Gaji"
+        }
+    ]
+}

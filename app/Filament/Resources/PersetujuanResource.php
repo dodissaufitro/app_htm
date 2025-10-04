@@ -52,7 +52,15 @@ class PersetujuanResource extends Resource
 
         // Apply user status access control (same as getEloquentQuery)
         if (!empty($user->allowed_status)) {
-            $query->whereIn('status_permohonan', $user->allowed_status);
+            // Ensure allowed_status is an array
+            $allowedStatus = $user->allowed_status;
+            if (is_string($allowedStatus)) {
+                $allowedStatus = json_decode($allowedStatus, true);
+            }
+
+            if (is_array($allowedStatus) && !empty($allowedStatus)) {
+                $query->whereIn('status_permohonan', $allowedStatus);
+            }
         }
 
         return (string) $query->count();
@@ -72,7 +80,15 @@ class PersetujuanResource extends Resource
         // Apply user status access control
         $user = Auth::user();
         if ($user && !empty($user->allowed_status)) {
-            $query->whereIn('status_permohonan', $user->allowed_status);
+            // Ensure allowed_status is an array
+            $allowedStatus = $user->allowed_status;
+            if (is_string($allowedStatus)) {
+                $allowedStatus = json_decode($allowedStatus, true);
+            }
+
+            if (is_array($allowedStatus) && !empty($allowedStatus)) {
+                $query->whereIn('status_permohonan', $allowedStatus);
+            }
         }
 
         return $query;
@@ -222,6 +238,23 @@ class PersetujuanResource extends Resource
                     ->limit(20)
                     ->toggleable(),
 
+                Tables\Columns\BadgeColumn::make('count_of_vehicle1')
+                    ->label('Kendaraan R2')
+                    ->color('info')
+                    ->toggleable(),
+
+                Tables\Columns\BadgeColumn::make('count_of_vehicle2')
+                    ->label('Kendaraan R4')
+                    ->color('warning')
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('bapenda_updated_at')
+                    ->label('Update Bapenda')
+                    ->dateTime('d/m/Y H:i')
+                    ->color(fn($record) => $record->bapenda_updated_at ? 'success' : 'danger')
+                    ->placeholder('Belum diupdate')
+                    ->toggleable(),
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Tanggal Daftar')
                     ->dateTime('d/m/Y H:i')
@@ -282,10 +315,10 @@ class PersetujuanResource extends Resource
                     ->color('success')
                     ->modalHeading('Statistik Data Persetujuan')
                     ->modalContent(function () {
-                        $total = DataPemohon::where('status_permohonan', 'lSnjFGXa68gYemjMG9H5IWHtrdWfh9G1')->count();
-                        $today = DataPemohon::where('status_permohonan', 'lSnjFGXa68gYemjMG9H5IWHtrdWfh9G1')
+                        $total = DataPemohon::where('status_permohonan', '1')->count();
+                        $today = DataPemohon::where('status_permohonan', '1')
                             ->whereDate('created_at', today())->count();
-                        $thisMonth = DataPemohon::where('status_permohonan', 'lSnjFGXa68gYemjMG9H5IWHtrdWfh9G1')
+                        $thisMonth = DataPemohon::where('status_permohonan', '1')
                             ->whereMonth('created_at', now()->month)->count();
 
                         return view('components.persetujuan-statistik', compact('total', 'today', 'thisMonth'));
@@ -295,6 +328,37 @@ class PersetujuanResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('refresh_bapenda')
+                    ->label('Refresh Data Bapenda')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->modalHeading('Refresh Data Bapenda')
+                    ->modalDescription('Apakah Anda yakin ingin memperbarui data bapenda untuk pemohon ini?')
+                    ->action(function ($record) {
+                        try {
+                            $success = \App\Observers\BapendaObserver::refreshBapendaData($record);
+
+                            if ($success) {
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Data Bapenda Berhasil Diperbarui')
+                                    ->success()
+                                    ->send();
+                            } else {
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Gagal Memperbarui Data Bapenda')
+                                    ->body('Silakan coba lagi atau periksa log untuk detail error.')
+                                    ->danger()
+                                    ->send();
+                            }
+                        } catch (\Exception $e) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('Error')
+                                ->body('Terjadi kesalahan: ' . $e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
                 Tables\Actions\Action::make('ubah_status')
                     ->label('Ubah Status')
                     ->icon('heroicon-o-arrow-path')

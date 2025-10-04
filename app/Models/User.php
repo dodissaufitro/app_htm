@@ -34,6 +34,7 @@ class User extends Authenticatable implements FilamentUser
         'email',
         'password',
         'allowed_status',
+        'urutan',
     ];
 
     /**
@@ -68,6 +69,7 @@ class User extends Authenticatable implements FilamentUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'allowed_status' => 'array',
+            'urutan' => 'integer',
         ];
     }
 
@@ -113,5 +115,67 @@ class User extends Authenticatable implements FilamentUser
     {
         $this->allowed_status = $statusCodes;
         $this->save();
+    }
+
+    /**
+     * Scope to order users by urutan field
+     */
+    public function scopeOrderByUrutan($query, $direction = 'asc')
+    {
+        return $query->orderBy('urutan', $direction);
+    }
+
+    /**
+     * Scope to get users by specific urutan
+     */
+    public function scopeByUrutan($query, int $urutan)
+    {
+        return $query->where('urutan', $urutan);
+    }
+
+    /**
+     * Get next user in urutan sequence
+     */
+    public function getNextUser()
+    {
+        return static::where('urutan', '>', $this->urutan)
+            ->orderBy('urutan', 'asc')
+            ->first();
+    }
+
+    /**
+     * Get previous user in urutan sequence
+     */
+    public function getPreviousUser()
+    {
+        return static::where('urutan', '<', $this->urutan)
+            ->orderBy('urutan', 'desc')
+            ->first();
+    }
+
+    /**
+     * Check if this is the first user in sequence
+     */
+    public function isFirstInSequence(): bool
+    {
+        return static::where('urutan', '<', $this->urutan)->count() === 0;
+    }
+
+    /**
+     * Check if this is the last user in sequence
+     */
+    public function isLastInSequence(): bool
+    {
+        return static::where('urutan', '>', $this->urutan)->count() === 0;
+    }
+
+    /**
+     * Get all users ordered by urutan for developer workflow
+     */
+    public static function getDeveloperWorkflowUsers()
+    {
+        return static::where('urutan', '>', 0)
+            ->orderBy('urutan', 'asc')
+            ->get();
     }
 }

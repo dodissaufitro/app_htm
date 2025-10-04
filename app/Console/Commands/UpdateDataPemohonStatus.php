@@ -51,10 +51,23 @@ class UpdateDataPemohonStatus extends Command
             return;
         }
 
-        // Update all records
-        $count = DataPemohon::query()->update(['status_permohonan' => $statusCode]);
+        // Get all records and update individually to trigger Observer
+        $dataPemohon = DataPemohon::all();
+        $count = 0;
+
+        foreach ($dataPemohon as $record) {
+            // Only update if status actually changed
+            if ($record->status_permohonan !== $statusCode) {
+                $record->update(['status_permohonan' => $statusCode]);
+                $count++;
+            }
+        }
 
         $this->info("Updated {$count} DataPemohon records to status: {$status->nama_status}");
+
+        if ($count > 0) {
+            $this->info("✅ Observer triggered for each record - app_verifikator will be updated automatically");
+        }
     }
 
     private function assignRandomStatus(): void

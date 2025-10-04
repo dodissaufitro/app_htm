@@ -52,7 +52,14 @@ class TestEntireSystem extends Command
         $this->call('test:all-kelengkapan-data', ['email' => $email]);
 
         $this->line('');
-        $this->line("🎯 FINAL SYSTEM SUMMARY");
+
+        // Test 3: DataPemohon View Interface
+        $this->info("3️⃣  TESTING DATAPEMOHON VIEW INTERFACE");
+        $this->line("═══════════════════════════════════════════════════════════════");
+        $this->call('test:data-pemohon-view', ['email' => $email]);
+
+        $this->line('');
+        $this->line("🎯 FINAL SYSTEM SUMMARY");;
         $this->line("═══════════════════════════════════════════════════════════════");
 
         // System Summary
@@ -63,6 +70,7 @@ class TestEntireSystem extends Command
         $this->line("  ✅ Status tabs filtering for DataPemohon");
         $this->line("  ✅ Card-based interface for Kelengkapan Data");
         $this->line("  ✅ Interactive filtering via card clicks");
+        $this->line("  ✅ Enhanced DataPemohon view interface");
         $this->line("  ✅ Foreign key constraints for data integrity");
         $this->line("  ✅ Comprehensive testing commands");
 
@@ -74,6 +82,8 @@ class TestEntireSystem extends Command
         $this->line("  ✅ Color-coded status indicators");
         $this->line("  ✅ Interactive hover effects");
         $this->line("  ✅ Real-time filtering capabilities");
+        $this->line("  ✅ Structured view with collapsible sections");
+        $this->line("  ✅ Copyable fields and enhanced readability");
 
         $this->line('');
         $this->info("🔐 SECURITY IMPLEMENTATION:");
@@ -85,7 +95,7 @@ class TestEntireSystem extends Command
 
         $this->line('');
         $this->info("📊 RESOURCES OVERVIEW:");
-        $this->line("  📋 DataPemohonResource: Status tabs + access control");
+        $this->line("  📋 DataPemohonResource: Status tabs + access control + enhanced view");
         $this->line("  📊 KelengkapanDataResource: Card-based interface");
         $this->line("  📋 PersetujuanResource: Workflow-based filtering");
         $this->line("  👥 UserResource: Super Admin only access");

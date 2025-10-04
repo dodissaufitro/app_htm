@@ -11,15 +11,19 @@ class DaftarBank extends Model
 
     protected $table = 'daftar_bank';
 
-    protected $keyType = 'string';
-
-    public $incrementing = false;
-
-    public $timestamps = true; // Enable timestamps
+    // Use standard auto-increment integer primary key
+    protected $keyType = 'int';
+    public $incrementing = true;
+    public $timestamps = true;
 
     protected $fillable = [
-        'id',
         'nama_bank',
-        'kode_bank', // Include kode_bank in fillable
+        'kode_bank',
+        'kode_bank_legacy',
+        'status',
+    ];
+
+    protected $casts = [
+        'id' => 'integer',
     ];
 }

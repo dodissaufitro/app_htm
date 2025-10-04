@@ -1,0 +1,219 @@
+{
+    "info": {
+        "name": "Data Pemohon API",
+        "description": "API collection for Data Pemohon endpoints",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Create Data Pemohon",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Accept",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"book_number\": \"2025100200001\",\n    \"settlement_name\": \"TOWER SAMAWA NUANSA PONDOK KELAPA\",\n    \"npwp\": \"090844465031000\",\n    \"nik\": \"3173072208930002\",\n    \"email_address\": \"test.api@gmail.com\",\n    \"name\": \"TEST API USER\",\n    \"mobile_phone_number\": \"081806563006\",\n    \"job\": \"Karyawan swasta\",\n    \"salary\": \"7880000\",\n    \"marital_status\": \"1\",\n    \"is_couple_dki\": false,\n    \"is_have_booking_kpr_dpnol\": true,\n    \"unit_type\": \"Tipe 36\",\n    \"price\": \"350000000\",\n    \"education_name\": \"SLTA\",\n    \"residence_status_name\": \"Orang Tua\",\n    \"correspondence_address\": \"Alamat KTP\",\n    \"province_name\": \"DKI Jakarta\",\n    \"city_name\": \"Jakarta Timur\",\n    \"district_name\": \"Duren Sawit\",\n    \"village_name\": \"Pondok Kelapa\",\n    \"address\": \"Jl. Pondok Kelapa Raya No. 123\",\n    \"count_of_vehicle1\": \"1\",\n    \"count_of_vehicle2\": \"0\",\n    \"is_have_saving_bank\": true,\n    \"is_have_home_credit\": false,\n    \"atpid\": \"2\",\n    \"mounthly_expense1\": \"500000\",\n    \"mounthly_expense2\": \"4000000\",\n    \"reason_of_choose_location\": [\n        {\n            \"id\": 4,\n            \"name\": \"Dekat Transportasi Publik\"\n        }\n    ],\n    \"booking_files\": [\n        {\n            \"fname\": \"test_ktp.jpg\",\n            \"base64\": null,\n            \"file_type\": \"KTP\"\n        }\n    ]\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/api/data-pemohon",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "data-pemohon"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get All Data Pemohon",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Accept",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/data-pemohon?page=1&per_page=10",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "data-pemohon"
+                    ],
+                    "query": [
+                        {
+                            "key": "page",
+                            "value": "1"
+                        },
+                        {
+                            "key": "per_page",
+                            "value": "10"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get Data Pemohon by ID",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Accept",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/data-pemohon/1",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "data-pemohon",
+                        "1"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get Data Pemohon by Book Number",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Accept",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/data-pemohon/2025100200001",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "data-pemohon",
+                        "2025100200001"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Search Data Pemohon",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Accept",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/data-pemohon?search=TEST&per_page=5",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "data-pemohon"
+                    ],
+                    "query": [
+                        {
+                            "key": "search",
+                            "value": "TEST"
+                        },
+                        {
+                            "key": "per_page",
+                            "value": "5"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Update Data Pemohon",
+            "request": {
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Accept",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"name\": \"TEST API USER UPDATED\",\n    \"mobile_phone_number\": \"081806563007\",\n    \"salary\": \"8500000\",\n    \"status_permohonan\": \"16\"\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/api/data-pemohon/1",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "data-pemohon",
+                        "1"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Delete Data Pemohon",
+            "request": {
+                "method": "DELETE",
+                "header": [
+                    {
+                        "key": "Accept",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/data-pemohon/1",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "data-pemohon",
+                        "1"
+                    ]
+                }
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost",
+            "type": "string"
+        }
+    ]
+}

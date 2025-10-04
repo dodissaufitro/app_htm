@@ -64,6 +64,7 @@ class DataPemohon extends Model
         'bapenda',
         'bapenda_pasangan',
         'bapenda_pasangan_pbb',
+        'bapenda_updated_at',
         'reason_of_choose_location',
         'aset_hunian',
         'booking_files',
@@ -75,9 +76,18 @@ class DataPemohon extends Model
         'mounthly_expense1',
         'mounthly_expense2',
         'status_permohonan',
+        'status', // Tambahkan untuk mencegah mass assignment error
+        'keterangan', // Field catatan persetujuan
         'id_bank',
         'updated_by',
         'created_by',
+    ];
+
+    // Tambahkan guarded untuk extra security
+    protected $guarded = [
+        'id',
+        'created_at',
+        'updated_at',
     ];
 
     protected $casts = [
@@ -90,6 +100,10 @@ class DataPemohon extends Model
         'is_have_booking_kpr_dpnol' => 'boolean',
         'is_have_saving_bank' => 'boolean',
         'is_have_home_credit' => 'boolean',
+        'aset_hunian' => 'array',
+        'reason_of_choose_location' => 'array',
+        'booking_files' => 'array',
+        'bapenda_updated_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -123,7 +137,12 @@ class DataPemohon extends Model
 
     public function appVerifikator()
     {
-        return $this->hasOne(AppVerifikator::class, 'pemohon_id');
+        return $this->hasMany(AppVerifikator::class, 'pemohon_id');
+    }
+
+    public function latestAppVerifikator()
+    {
+        return $this->hasOne(AppVerifikator::class, 'pemohon_id')->latest('created_at');
     }
 
     /**
@@ -142,5 +161,71 @@ class DataPemohon extends Model
     public function scopeForPersetujuan($query)
     {
         return $query->withStatusUrut(1);
+    }
+
+    /**
+     * Get Bapenda data as array
+     */
+    public function getBapendaDataAttribute()
+    {
+        if (empty($this->bapenda)) {
+            return null;
+        }
+
+        try {
+            return json_decode($this->bapenda, true);
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Get Aset Hunian data as array
+     */
+    public function getAsetHunianDataAttribute()
+    {
+        if (empty($this->aset_hunian)) {
+            return null;
+        }
+
+        try {
+            return json_decode($this->aset_hunian, true);
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Check if pemohon has Bapenda data
+     */
+    public function hasBapendaData(): bool
+    {
+        return !empty($this->bapenda);
+    }
+
+    /**
+     * Check if pemohon has Aset Hunian data
+     */
+    public function hasAsetHunianData(): bool
+    {
+        return !empty($this->aset_hunian);
+    }
+
+    /**
+     * Get count of vehicles from Bapenda data
+     */
+    public function getBapendaVehicleCountAttribute(): int
+    {
+        $bapendaData = $this->getBapendaDataAttribute();
+        return $bapendaData ? count($bapendaData) : 0;
+    }
+
+    /**
+     * Get count of properties from Aset Hunian data
+     */
+    public function getAsetHunianCountAttribute(): int
+    {
+        $asetHunianData = $this->getAsetHunianDataAttribute();
+        return $asetHunianData ? count($asetHunianData) : 0;
     }
 }

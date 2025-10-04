@@ -30,7 +30,15 @@ class ListDataPemohons extends ListRecords
 
         // If user has restricted access, only get allowed statuses
         if (!empty($user->allowed_status)) {
-            $statusesQuery->whereIn('kode', $user->allowed_status);
+            // Ensure allowed_status is an array
+            $allowedStatus = $user->allowed_status;
+            if (is_string($allowedStatus)) {
+                $allowedStatus = json_decode($allowedStatus, true);
+            }
+
+            if (is_array($allowedStatus) && !empty($allowedStatus)) {
+                $statusesQuery->whereIn('kode', $allowedStatus);
+            }
         }
 
         $statuses = $statusesQuery->get();
@@ -42,7 +50,15 @@ class ListDataPemohons extends ListRecords
             // Calculate total count respecting user access control
             $totalQuery = $this->getModel()::query();
             if (!empty($user->allowed_status)) {
-                $totalQuery->whereIn('status_permohonan', $user->allowed_status);
+                // Ensure allowed_status is an array
+                $allowedStatus = $user->allowed_status;
+                if (is_string($allowedStatus)) {
+                    $allowedStatus = json_decode($allowedStatus, true);
+                }
+
+                if (is_array($allowedStatus) && !empty($allowedStatus)) {
+                    $totalQuery->whereIn('status_permohonan', $allowedStatus);
+                }
             }
 
             $tabs['semua'] = Tab::make('Semua')

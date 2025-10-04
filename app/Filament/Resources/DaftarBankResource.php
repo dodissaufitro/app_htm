@@ -36,21 +36,34 @@ class DaftarBankResource extends Resource
                 Forms\Components\Section::make('Informasi Bank')
                     ->description('Masukkan informasi detail bank')
                     ->schema([
-                        Forms\Components\TextInput::make('id')
+                        Forms\Components\TextInput::make('kode_bank')
                             ->label('Kode Bank')
                             ->required()
-                            ->maxLength(32)
+                            ->maxLength(10)
                             ->placeholder('Contoh: BCA, BNI, BRI')
-                            ->helperText('Kode unik untuk identifikasi bank')
+                            ->helperText('Kode bank (dapat duplikat dengan status berbeda)')
                             ->columnSpan(1),
 
                         Forms\Components\TextInput::make('nama_bank')
                             ->label('Nama Bank')
                             ->required()
-                            ->maxLength(32)
-                            ->placeholder('Contoh: Bank Central Asia')
-                            ->helperText('Nama lengkap bank')
+                            ->maxLength(100)
+                            ->placeholder('Contoh: Bank Central Asia - Jakarta Pusat')
+                            ->helperText('Nama lengkap bank dengan lokasi/cabang')
                             ->columnSpan(1),
+
+                        Forms\Components\Select::make('status')
+                            ->label('Status')
+                            ->required()
+                            ->options([
+                                'active' => 'Aktif',
+                                'inactive' => 'Tidak Aktif',
+                                'pending' => 'Pending',
+                                'maintenance' => 'Maintenance',
+                            ])
+                            ->default('active')
+                            ->helperText('Status operasional bank')
+                            ->columnSpan(2),
                     ])
                     ->columns(2)
                     ->icon('heroicon-o-building-library'),
@@ -62,6 +75,11 @@ class DaftarBankResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('id')
+                    ->label('ID')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('kode_bank')
                     ->label('Kode Bank')
                     ->searchable()
                     ->sortable()
@@ -77,7 +95,25 @@ class DaftarBankResource extends Resource
                     ->sortable()
                     ->wrap()
                     ->icon('heroicon-o-building-library')
-                    ->description(fn($record) => 'Kode: ' . $record->id),
+                    ->description(fn($record) => 'Kode: ' . $record->kode_bank),
+
+                Tables\Columns\TextColumn::make('status')
+                    ->label('Status')
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'active' => 'success',
+                        'inactive' => 'danger',
+                        'pending' => 'warning',
+                        'maintenance' => 'gray',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'active' => 'Aktif',
+                        'inactive' => 'Tidak Aktif',
+                        'pending' => 'Pending',
+                        'maintenance' => 'Maintenance',
+                        default => $state,
+                    }),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Dibuat')

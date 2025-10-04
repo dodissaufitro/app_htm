@@ -41,7 +41,15 @@ class KelengkapanDataResource extends Resource
 
         // Apply user status access control (same as getEloquentQuery)
         if (!empty($user->allowed_status)) {
-            $query->whereIn('status_permohonan', $user->allowed_status);
+            // Ensure allowed_status is an array
+            $allowedStatus = $user->allowed_status;
+            if (is_string($allowedStatus)) {
+                $allowedStatus = json_decode($allowedStatus, true);
+            }
+
+            if (is_array($allowedStatus) && !empty($allowedStatus)) {
+                $query->whereIn('status_permohonan', $allowedStatus);
+            }
         }
 
         return (string) $query->count();
@@ -59,7 +67,15 @@ class KelengkapanDataResource extends Resource
 
         // Apply user access control
         if (!empty($user->allowed_status)) {
-            $query->whereIn('status_permohonan', $user->allowed_status);
+            // Ensure allowed_status is an array
+            $allowedStatus = $user->allowed_status;
+            if (is_string($allowedStatus)) {
+                $allowedStatus = json_decode($allowedStatus, true);
+            }
+
+            if (is_array($allowedStatus) && !empty($allowedStatus)) {
+                $query->whereIn('status_permohonan', $allowedStatus);
+            }
         }
 
         return $query;
@@ -248,8 +264,10 @@ class KelengkapanDataResource extends Resource
                         $stats = DataPemohon::with('status')
                             ->get()
                             ->groupBy('status.nama_status')
-                            ->map(fn($group) => $group->count())
-                            ->reject(fn($count, $key) => is_null($key));
+                            ->map(function ($group) {
+                                return is_countable($group) ? $group->count() : 0;
+                            })
+                            ->reject(fn($count, $key) => is_null($key) || empty($key));
 
                         return view('components.kelengkapan-statistik', compact('stats'));
                     })

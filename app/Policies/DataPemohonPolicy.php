@@ -18,7 +18,7 @@ class DataPemohonPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view_any_kelengkapan::data');
+        return $user->can('view_any_persetujuan');
     }
 
     /**
@@ -30,13 +30,7 @@ class DataPemohonPolicy
      */
     public function view(User $user, DataPemohon $dataPemohon): bool
     {
-        // Check basic permission first
-        if (!$user->can('view_kelengkapan::data')) {
-            return false;
-        }
-
-        // Check if user can access this specific status
-        return $this->canAccessDataPemohonStatus($user, $dataPemohon);
+        return $user->can('view_persetujuan');
     }
 
     /**
@@ -47,7 +41,7 @@ class DataPemohonPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('create_kelengkapan::data');
+        return $user->can('create_persetujuan');
     }
 
     /**
@@ -59,13 +53,7 @@ class DataPemohonPolicy
      */
     public function update(User $user, DataPemohon $dataPemohon): bool
     {
-        // Check basic permission first
-        if (!$user->can('update_kelengkapan::data')) {
-            return false;
-        }
-
-        // Check if user can access this specific status
-        return $this->canAccessDataPemohonStatus($user, $dataPemohon);
+        return $user->can('update_persetujuan');
     }
 
     /**
@@ -77,13 +65,7 @@ class DataPemohonPolicy
      */
     public function delete(User $user, DataPemohon $dataPemohon): bool
     {
-        // Check basic permission first
-        if (!$user->can('delete_kelengkapan::data')) {
-            return false;
-        }
-
-        // Check if user can access this specific status
-        return $this->canAccessDataPemohonStatus($user, $dataPemohon);
+        return $user->can('delete_persetujuan');
     }
 
     /**
@@ -94,7 +76,7 @@ class DataPemohonPolicy
      */
     public function deleteAny(User $user): bool
     {
-        return $user->can('delete_any_kelengkapan::data');
+        return $user->can('delete_any_persetujuan');
     }
 
     /**
@@ -106,7 +88,7 @@ class DataPemohonPolicy
      */
     public function forceDelete(User $user, DataPemohon $dataPemohon): bool
     {
-        return $user->can('force_delete_kelengkapan::data');
+        return $user->can('force_delete_persetujuan');
     }
 
     /**
@@ -117,7 +99,7 @@ class DataPemohonPolicy
      */
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_kelengkapan::data');
+        return $user->can('force_delete_any_persetujuan');
     }
 
     /**
@@ -129,7 +111,7 @@ class DataPemohonPolicy
      */
     public function restore(User $user, DataPemohon $dataPemohon): bool
     {
-        return $user->can('restore_kelengkapan::data');
+        return $user->can('restore_persetujuan');
     }
 
     /**
@@ -140,7 +122,7 @@ class DataPemohonPolicy
      */
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_kelengkapan::data');
+        return $user->can('restore_any_persetujuan');
     }
 
     /**
@@ -152,7 +134,7 @@ class DataPemohonPolicy
      */
     public function replicate(User $user, DataPemohon $dataPemohon): bool
     {
-        return $user->can('replicate_kelengkapan::data');
+        return $user->can('replicate_persetujuan');
     }
 
     /**
@@ -163,24 +145,7 @@ class DataPemohonPolicy
      */
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_kelengkapan::data');
+        return $user->can('reorder_persetujuan');
     }
 
-    /**
-     * Helper method to check if user can access data pemohon based on status
-     *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\DataPemohon  $dataPemohon
-     * @return bool
-     */
-    private function canAccessDataPemohonStatus(User $user, DataPemohon $dataPemohon): bool
-    {
-        // If no allowed status is configured, user can access all
-        if (empty($user->allowed_status)) {
-            return true;
-        }
-
-        // Check if the data pemohon's status is in user's allowed status list
-        return in_array($dataPemohon->status_permohonan, $user->allowed_status);
-    }
 }

@@ -1,0 +1,508 @@
+{
+	"info": {
+		"_postman_id": "data-pemohon-api-collection-v2",
+		"name": "Data Pemohon API - Complete Collection",
+		"description": "Complete API collection for Data Pemohon CRUD operations with tests and examples",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "data-pemohon-api"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string",
+			"description": "Laravel API base URL"
+		},
+		{
+			"key": "api_endpoint",
+			"value": "{{base_url}}/api/data-pemohon",
+			"type": "string"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Generate random data for testing",
+					"pm.environment.set('random_username', 'user_' + Math.floor(Math.random() * 10000));",
+					"pm.environment.set('random_nik', '31730722089' + String(Math.floor(Math.random() * 100000)).padStart(5, '0'));",
+					"pm.environment.set('timestamp', Date.now());"
+				]
+			}
+		}
+	],
+	"item": [
+		{
+			"name": "📋 Get All Data Pemohon",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Response has success field', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response).to.have.property('success');",
+							"    pm.expect(response.success).to.be.true;",
+							"});",
+							"",
+							"pm.test('Response has data field', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response).to.have.property('data');",
+							"});",
+							"",
+							"// Save first record ID for other tests",
+							"const response = pm.response.json();",
+							"if (response.data && response.data.data && response.data.data.length > 0) {",
+							"    pm.environment.set('existing_id', response.data.data[0].id);",
+							"    pm.environment.set('existing_book_number', response.data.data[0].id_pendaftaran);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{api_endpoint}}",
+					"host": ["{{api_endpoint}}"]
+				},
+				"description": "Get all data pemohon with pagination"
+			}
+		},
+		{
+			"name": "🔍 Search Data Pemohon",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Search results contain search term', function () {",
+							"    const response = pm.response.json();",
+							"    if (response.data && response.data.data && response.data.data.length > 0) {",
+							"        const searchTerm = pm.request.url.query.get('search');",
+							"        const found = response.data.data.some(item => ",
+							"            item.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||",
+							"            item.nik.includes(searchTerm) ||",
+							"            item.id_pendaftaran.includes(searchTerm)",
+							"        );",
+							"        pm.expect(found).to.be.true;",
+							"    }",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{api_endpoint}}?search=BAGUS&per_page=10",
+					"host": ["{{api_endpoint}}"],
+					"query": [
+						{
+							"key": "search",
+							"value": "BAGUS",
+							"description": "Search by name, NIK, or registration ID"
+						},
+						{
+							"key": "per_page",
+							"value": "10",
+							"description": "Records per page"
+						}
+					]
+				},
+				"description": "Search data pemohon by name, NIK, or registration ID"
+			}
+		},
+		{
+			"name": "🏷️ Filter by Status",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{api_endpoint}}?status=pending&per_page=5",
+					"host": ["{{api_endpoint}}"],
+					"query": [
+						{
+							"key": "status",
+							"value": "pending",
+							"description": "Filter by status permohonan"
+						},
+						{
+							"key": "per_page",
+							"value": "5"
+						}
+					]
+				},
+				"description": "Filter data pemohon by status"
+			}
+		},
+		{
+			"name": "➕ Create Data Pemohon",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 201', function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test('Response has created data', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response).to.have.property('success');",
+							"    pm.expect(response.success).to.be.true;",
+							"    pm.expect(response).to.have.property('data');",
+							"    pm.expect(response.data).to.have.property('id');",
+							"});",
+							"",
+							"// Save created ID for other tests",
+							"const response = pm.response.json();",
+							"if (response.data && response.data.id) {",
+							"    pm.environment.set('last_created_id', response.data.id);",
+							"    pm.environment.set('last_created_book_number', response.data.id_pendaftaran);",
+							"    console.log('Created Data Pemohon with ID: ' + response.data.id);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"username\": \"{{random_username}}\",\n    \"nik\": \"{{random_nik}}\",\n    \"nama\": \"BAGUS RIFAI TEST\",\n    \"email_address\": \"test.{{timestamp}}@gmail.com\",\n    \"mobile_phone_number\": \"081806563006\",\n    \"job\": \"Karyawan swasta\",\n    \"salary\": 7880000,\n    \"marital_status\": \"1\",\n    \"is_couple_dki\": 0,\n    \"couple_id_card_number\": null,\n    \"couple_name\": null,\n    \"is_have_booking_kpr_dpnol\": 1,\n    \"unit_type\": null,\n    \"price\": null,\n    \"education_name\": \"SLTA\",\n    \"residence_status_name\": \"Orang Tua\",\n    \"correspondence_address\": \"Alamat KTP\",\n    \"is_domicile_same_with_ektp\": \"1\",\n    \"count_of_vehicle1\": 0,\n    \"count_of_vehicle2\": 0,\n    \"is_have_saving_bank\": 1,\n    \"is_have_home_credit\": 0,\n    \"atp_name\": \"Rp 1.500.000 - Rp 2.000.000\",\n    \"mounthly_expense1\": 500000,\n    \"mounthly_expense2\": 4000000,\n    \"settlement_name\": \"TOWER SAMAWA NUANSA PONDOK KELAPA\",\n    \"reason_of_choose_location\": [\n        {\n            \"id\": 4,\n            \"name\": \"Dekat Transportasi Publik\"\n        }\n    ],\n    \"aset_hunian\": [],\n    \"government_assistance_aid\": [],\n    \"booking_files\": [\n        {\n            \"fname\": \"test_ktp_{{timestamp}}.jpg\",\n            \"file_type\": \"KTP\"\n        },\n        {\n            \"fname\": \"test_kk_{{timestamp}}.jpg\",\n            \"file_type\": \"KK\"\n        },\n        {\n            \"fname\": \"test_npwp_{{timestamp}}.jpg\",\n            \"file_type\": \"Kartu NPWP\"\n        }\n    ]\n}"
+				},
+				"url": {
+					"raw": "{{api_endpoint}}",
+					"host": ["{{api_endpoint}}"]
+				},
+				"description": "Create new data pemohon with dynamic test data"
+			}
+		},
+		{
+			"name": "👁️ Get Single Data Pemohon",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Response has single data record', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response).to.have.property('data');",
+							"    pm.expect(response.data).to.have.property('id');",
+							"    pm.expect(response.data).to.have.property('nama');",
+							"    pm.expect(response.data).to.have.property('nik');",
+							"});",
+							"",
+							"pm.test('JSON fields are parsed correctly', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.data.reason_of_choose_location).to.be.an('array');",
+							"    pm.expect(response.data.booking_files).to.be.an('array');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{api_endpoint}}/{{last_created_id}}",
+					"host": ["{{api_endpoint}}"],
+					"path": ["{{last_created_id}}"]
+				},
+				"description": "Get specific data pemohon by ID (uses last created ID)"
+			}
+		},
+		{
+			"name": "✏️ Update Data Pemohon (PUT)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Data was updated successfully', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.success).to.be.true;",
+							"    pm.expect(response.message).to.include('updated');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"nama\": \"BAGUS RIFAI UPDATED {{timestamp}}\",\n    \"salary\": 8500000,\n    \"job\": \"Senior Software Developer\",\n    \"email_address\": \"bagus.updated.{{timestamp}}@gmail.com\",\n    \"mobile_phone_number\": \"081806563007\"\n}"
+				},
+				"url": {
+					"raw": "{{api_endpoint}}/{{last_created_id}}",
+					"host": ["{{api_endpoint}}"],
+					"path": ["{{last_created_id}}"]
+				},
+				"description": "Full update of data pemohon"
+			}
+		},
+		{
+			"name": "🔧 Partial Update (PATCH)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Partial update successful', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.success).to.be.true;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"salary\": 9500000,\n    \"job\": \"Lead Developer\"\n}"
+				},
+				"url": {
+					"raw": "{{api_endpoint}}/{{last_created_id}}",
+					"host": ["{{api_endpoint}}"],
+					"path": ["{{last_created_id}}"]
+				},
+				"description": "Partial update - only salary and job fields"
+			}
+		},
+		{
+			"name": "📖 Get by Book Number",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Found data by book number', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response).to.have.property('data');",
+							"    pm.expect(response.data).to.have.property('id_pendaftaran');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{api_endpoint}}/book-number/{{last_created_book_number}}",
+					"host": ["{{api_endpoint}}"],
+					"path": ["book-number", "{{last_created_book_number}}"]
+				},
+				"description": "Get data pemohon by book number (id_pendaftaran)"
+			}
+		},
+		{
+			"name": "📁 Create with Base64 Upload",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 201', function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test('File uploaded successfully', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.success).to.be.true;",
+							"    // Check if booking_files contains the uploaded file",
+							"    const bookingFiles = JSON.parse(response.data.booking_files || '[]');",
+							"    pm.expect(bookingFiles).to.be.an('array');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"username\": \"base64.test.{{timestamp}}\",\n    \"nama\": \"Test Base64 Upload {{timestamp}}\",\n    \"nik\": \"1234567890123456\",\n    \"email_address\": \"base64.test.{{timestamp}}@example.com\",\n    \"mobile_phone_number\": \"081234567890\",\n    \"job\": \"Tester\",\n    \"salary\": 5000000,\n    \"booking_files\": [\n        {\n            \"base64\": \"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=\",\n            \"file_type\": \"KTP\"\n        }\n    ]\n}"
+				},
+				"url": {
+					"raw": "{{api_endpoint}}",
+					"host": ["{{api_endpoint}}"]
+				},
+				"description": "Create data pemohon with base64 file upload (minimal test image)"
+			}
+		},
+		{
+			"name": "❌ Error Test - Invalid Data",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 422 (Validation Error)', function () {",
+							"    pm.response.to.have.status(422);",
+							"});",
+							"",
+							"pm.test('Response contains validation errors', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response).to.have.property('success');",
+							"    pm.expect(response.success).to.be.false;",
+							"    pm.expect(response).to.have.property('errors');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"username\": \"test\",\n    \"nik\": \"123\",\n    \"email_address\": \"invalid-email\",\n    \"salary\": \"not-a-number\"\n}"
+				},
+				"url": {
+					"raw": "{{api_endpoint}}",
+					"host": ["{{api_endpoint}}"]
+				},
+				"description": "Test validation errors with invalid data"
+			}
+		},
+		{
+			"name": "❌ Error Test - Not Found",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 404', function () {",
+							"    pm.response.to.have.status(404);",
+							"});",
+							"",
+							"pm.test('Response indicates not found', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.success).to.be.false;",
+							"    pm.expect(response.message).to.include('not found');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{api_endpoint}}/99999",
+					"host": ["{{api_endpoint}}"],
+					"path": ["99999"]
+				},
+				"description": "Test 404 error with non-existent ID"
+			}
+		},
+		{
+			"name": "🗑️ Delete Data Pemohon",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Data deleted successfully', function () {",
+							"    const response = pm.response.json();",
+							"    pm.expect(response.success).to.be.true;",
+							"    pm.expect(response.message).to.include('deleted');",
+							"});",
+							"",
+							"// Clear the deleted ID from environment",
+							"pm.environment.unset('last_created_id');",
+							"pm.environment.unset('last_created_book_number');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{api_endpoint}}/{{last_created_id}}",
+					"host": ["{{api_endpoint}}"],
+					"path": ["{{last_created_id}}"]
+				},
+				"description": "Delete the last created data pemohon"
+			}
+		}
+	]
+}

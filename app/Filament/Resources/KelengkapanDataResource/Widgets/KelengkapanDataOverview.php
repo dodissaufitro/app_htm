@@ -17,13 +17,27 @@ class KelengkapanDataOverview extends StatsOverviewWidget
         // Get base query with user access control
         $baseQuery = DataPemohon::query();
         if (!empty($user->allowed_status)) {
-            $baseQuery->whereIn('status_permohonan', $user->allowed_status);
+            // Ensure allowed_status is an array
+            $allowedStatus = $user->allowed_status;
+            if (is_string($allowedStatus)) {
+                $allowedStatus = json_decode($allowedStatus, true);
+            }
+            if (is_array($allowedStatus) && !empty($allowedStatus)) {
+                $baseQuery->whereIn('status_permohonan', $allowedStatus);
+            }
         }
 
         // Get allowed statuses
         $statusesQuery = Status::orderBy('urut');
         if (!empty($user->allowed_status)) {
-            $statusesQuery->whereIn('kode', $user->allowed_status);
+            // Ensure allowed_status is an array
+            $allowedStatus = $user->allowed_status;
+            if (is_string($allowedStatus)) {
+                $allowedStatus = json_decode($allowedStatus, true);
+            }
+            if (is_array($allowedStatus) && !empty($allowedStatus)) {
+                $statusesQuery->whereIn('kode', $allowedStatus);
+            }
         }
         $statuses = $statusesQuery->get();
 
@@ -46,29 +60,49 @@ class KelengkapanDataOverview extends StatsOverviewWidget
 
             // Get status color
             $color = match ($status->kode) {
-                'DRAFT' => 'gray',
-                'PROSES' => 'warning',
-                'DITUNDA UPDP' => 'danger',
-                'LOLOS UPDP' => 'info',
-                'SUBMITTED' => 'warning',
-                'UNDER_REVIEW' => 'info',
-                'APPROVED' => 'success',
-                'REJECTED' => 'danger',
-                'COMPLETED' => 'success',
+                '-1' => 'danger',      // Tidak lolos Verifikasi
+                '0' => 'warning',      // Ditunda Bank
+                '1' => 'warning',      // Ditunda Verifikator
+                '2' => 'info',         // Approval Pengembang/ Developer
+                '3' => 'danger',       // Ditolak
+                '4' => 'gray',         // Dibatalkan
+                '5' => 'info',         // Administrasi Bank
+                '6' => 'warning',      // Ditunda Developer
+                '8' => 'danger',       // Tidak lolos analisa perbankan
+                '9' => 'success',      // Bank
+                '10' => 'success',     // Akad Kredit
+                '11' => 'success',     // BAST
+                '12' => 'success',     // Selesai
+                '15' => 'info',        // Verifikasi Dokumen Pendaftaran
+                '16' => 'info',        // Tahap Survey
+                '17' => 'info',        // Penetapan
+                '18' => 'gray',        // Pengajuan Dibatalkan
+                '19' => 'info',        // Verifikasi Dokumen Pendaftaran
+                '20' => 'warning',     // Ditunda Penetapan
                 default => 'primary'
             };
 
             // Get icon for status
             $icon = match ($status->kode) {
-                'DRAFT' => 'heroicon-o-document',
-                'PROSES' => 'heroicon-o-clock',
-                'DITUNDA UPDP' => 'heroicon-o-pause',
-                'LOLOS UPDP' => 'heroicon-o-check-circle',
-                'SUBMITTED' => 'heroicon-o-paper-airplane',
-                'UNDER_REVIEW' => 'heroicon-o-eye',
-                'APPROVED' => 'heroicon-o-check-badge',
-                'REJECTED' => 'heroicon-o-x-circle',
-                'COMPLETED' => 'heroicon-o-check-circle',
+                '-1' => 'heroicon-o-x-circle',         // Tidak lolos Verifikasi
+                '0' => 'heroicon-o-pause',             // Ditunda Bank
+                '1' => 'heroicon-o-pause',             // Ditunda Verifikator
+                '2' => 'heroicon-o-check-badge',       // Approval Pengembang/ Developer
+                '3' => 'heroicon-o-x-circle',          // Ditolak
+                '4' => 'heroicon-o-no-symbol',         // Dibatalkan
+                '5' => 'heroicon-o-building-library',  // Administrasi Bank
+                '6' => 'heroicon-o-pause',             // Ditunda Developer
+                '8' => 'heroicon-o-x-circle',          // Tidak lolos analisa perbankan
+                '9' => 'heroicon-o-building-library',  // Bank
+                '10' => 'heroicon-o-document-text',    // Akad Kredit
+                '11' => 'heroicon-o-check-circle',     // BAST
+                '12' => 'heroicon-o-check-circle',     // Selesai
+                '15' => 'heroicon-o-document-check',   // Verifikasi Dokumen Pendaftaran
+                '16' => 'heroicon-o-map-pin',          // Tahap Survey
+                '17' => 'heroicon-o-clipboard-document', // Penetapan
+                '18' => 'heroicon-o-no-symbol',        // Pengajuan Dibatalkan
+                '19' => 'heroicon-o-document-check',   // Verifikasi Dokumen Pendaftaran
+                '20' => 'heroicon-o-pause',            // Ditunda Penetapan
                 default => 'heroicon-o-clipboard-document'
             };
 
@@ -87,7 +121,14 @@ class KelengkapanDataOverview extends StatsOverviewWidget
         // Data by Bank
         $bankStats = DataPemohon::selectRaw('id_bank, COUNT(*) as count')
             ->when(!empty($user->allowed_status), function ($query) use ($user) {
-                $query->whereIn('status_permohonan', $user->allowed_status);
+                // Ensure allowed_status is an array
+                $allowedStatus = $user->allowed_status;
+                if (is_string($allowedStatus)) {
+                    $allowedStatus = json_decode($allowedStatus, true);
+                }
+                if (is_array($allowedStatus) && !empty($allowedStatus)) {
+                    $query->whereIn('status_permohonan', $allowedStatus);
+                }
             })
             ->whereNotNull('id_bank')
             ->groupBy('id_bank')
@@ -109,7 +150,14 @@ class KelengkapanDataOverview extends StatsOverviewWidget
         // Data by Income Range
         $highIncomeCount = DataPemohon::where('gaji', '>=', 10000000)
             ->when(!empty($user->allowed_status), function ($query) use ($user) {
-                $query->whereIn('status_permohonan', $user->allowed_status);
+                // Ensure allowed_status is an array
+                $allowedStatus = $user->allowed_status;
+                if (is_string($allowedStatus)) {
+                    $allowedStatus = json_decode($allowedStatus, true);
+                }
+                if (is_array($allowedStatus) && !empty($allowedStatus)) {
+                    $query->whereIn('status_permohonan', $allowedStatus);
+                }
             })
             ->count();
 
@@ -125,7 +173,14 @@ class KelengkapanDataOverview extends StatsOverviewWidget
         // Couple data
         $coupleCount = DataPemohon::where('is_couple_dki', true)
             ->when(!empty($user->allowed_status), function ($query) use ($user) {
-                $query->whereIn('status_permohonan', $user->allowed_status);
+                // Ensure allowed_status is an array
+                $allowedStatus = $user->allowed_status;
+                if (is_string($allowedStatus)) {
+                    $allowedStatus = json_decode($allowedStatus, true);
+                }
+                if (is_array($allowedStatus) && !empty($allowedStatus)) {
+                    $query->whereIn('status_permohonan', $allowedStatus);
+                }
             })
             ->count();
 

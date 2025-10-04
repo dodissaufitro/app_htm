@@ -56,6 +56,25 @@ class UserResource extends Resource
                             ->password()
                             ->required(fn(string $operation): bool => $operation === 'create')
                             ->maxLength(255),
+                        Forms\Components\TextInput::make('urutan')
+                            ->label('Urutan Developer')
+                            ->numeric()
+                            ->default(0)
+                            ->helperText('0 = Tidak dalam workflow, 1+ = Urutan dalam workflow developer')
+                            ->suffixAction(
+                                Forms\Components\Actions\Action::make('view_workflow')
+                                    ->icon('heroicon-o-eye')
+                                    ->tooltip('Lihat Workflow')
+                                    ->action(function () {
+                                        // This will show workflow info in a notification
+                                        $workflowUsers = User::getDeveloperWorkflowUsers();
+                                        $workflow = $workflowUsers->map(fn($u) => "{$u->urutan}. {$u->name}")->join(' → ');
+                                        \Filament\Notifications\Notification::make()
+                                            ->title('Developer Workflow')
+                                            ->body($workflow ?: 'Belum ada user dalam workflow')
+                                            ->send();
+                                    })
+                            ),
                     ])
                     ->columns(2),
 
@@ -83,7 +102,7 @@ class UserResource extends Resource
                             ->descriptions(function () {
                                 return Status::orderBy('urut')->pluck('keterangan', 'kode')->toArray();
                             })
-                            ->columns(2)
+                            ->columns(3)
                             ->helperText('Kosongkan untuk memberikan akses ke semua status'),
                     ]),
             ]);
@@ -101,6 +120,15 @@ class UserResource extends Resource
                     ->label('Email')
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\BadgeColumn::make('urutan')
+                    ->label('Urutan')
+                    ->getStateUsing(function (User $record) {
+                        return $record->urutan > 0 ? $record->urutan : 'Tidak dalam workflow';
+                    })
+                    ->color(function (User $record) {
+                        return $record->urutan > 0 ? 'success' : 'gray';
+                    })
+                    ->sortable(),
                 Tables\Columns\TagsColumn::make('roles.name')
                     ->label('Roles')
                     ->color('info')
@@ -113,10 +141,21 @@ class UserResource extends Resource
                         if (empty($record->allowed_status)) {
                             return ['Semua Status'];
                         }
-                        return Status::whereIn('kode', $record->allowed_status)
-                            ->orderBy('urut')
-                            ->pluck('nama_status')
-                            ->toArray();
+
+                        // Ensure allowed_status is an array
+                        $allowedStatus = $record->allowed_status;
+                        if (is_string($allowedStatus)) {
+                            $allowedStatus = json_decode($allowedStatus, true);
+                        }
+
+                        if (is_array($allowedStatus) && !empty($allowedStatus)) {
+                            return Status::whereIn('kode', $allowedStatus)
+                                ->orderBy('urut')
+                                ->pluck('nama_status')
+                                ->toArray();
+                        }
+
+                        return ['Semua Status'];
                     })
                     ->color(function (User $record) {
                         return empty($record->allowed_status) ? 'success' : 'primary';
@@ -138,6 +177,19 @@ class UserResource extends Resource
                     ->relationship('roles', 'name')
                     ->multiple()
                     ->preload(),
+                Tables\Filters\SelectFilter::make('urutan')
+                    ->label('Filter by Urutan')
+                    ->options([
+                        0 => 'Tidak dalam workflow',
+                        1 => 'Urutan 1 (Verifikator Awal)',
+                        2 => 'Urutan 2 (Developer)',
+                        3 => 'Urutan 3 (Bank Analisis)',
+                        4 => 'Urutan 4 (Supervisor)',
+                        5 => 'Urutan 5 (Manager)',
+                    ]),
+                Tables\Filters\Filter::make('in_workflow')
+                    ->label('Dalam Workflow')
+                    ->query(fn(Builder $query): Builder => $query->where('urutan', '>', 0)),
                 Tables\Filters\Filter::make('has_limited_access')
                     ->label('Akses Terbatas')
                     ->query(fn(Builder $query): Builder => $query->whereNotNull('allowed_status')),
@@ -171,6 +223,10 @@ class UserResource extends Resource
                     ->label('Kelola Status')
                     ->icon('heroicon-o-adjustments-horizontal')
                     ->color('warning')
+                    ->visible(function () {
+                        $currentUser = Auth::user();
+                        return $currentUser && $currentUser instanceof User && $currentUser->urutan === 1;
+                    })
                     ->form([
                         Forms\Components\CheckboxList::make('allowed_status')
                             ->label('Status yang Diizinkan')
@@ -190,6 +246,63 @@ class UserResource extends Resource
                         $record->update([
                             'allowed_status' => empty($data['allowed_status']) ? null : $data['allowed_status'],
                         ]);
+                    }),
+                Tables\Actions\Action::make('set_urutan')
+                    ->label('Atur Urutan')
+                    ->icon('heroicon-o-queue-list')
+                    ->color('info')
+                    ->form([
+                        Forms\Components\TextInput::make('urutan')
+                            ->label('Urutan Developer')
+                            ->numeric()
+                            ->default(fn(User $record) => $record->urutan)
+                            ->helperText('0 = Tidak dalam workflow, 1+ = Urutan dalam workflow')
+                            ->required(),
+                        Forms\Components\Placeholder::make('current_workflow')
+                            ->label('Workflow Saat Ini')
+                            ->content(function () {
+                                $workflowUsers = User::getDeveloperWorkflowUsers();
+                                if ($workflowUsers->isEmpty()) {
+                                    return 'Belum ada user dalam workflow';
+                                }
+                                return $workflowUsers->map(fn($u) => "{$u->urutan}. {$u->name}")->join('<br>');
+                            })
+                            ->extraAttributes(['class' => 'text-sm']),
+                    ])
+                    ->fillForm(fn(User $record): array => [
+                        'urutan' => $record->urutan,
+                    ])
+                    ->action(function (array $data, User $record): void {
+                        $newUrutan = $data['urutan'];
+
+                        // Check if urutan is already taken and handle swapping
+                        if ($newUrutan > 0) {
+                            $existingUser = User::where('urutan', $newUrutan)
+                                ->where('id', '!=', $record->id)
+                                ->first();
+
+                            if ($existingUser) {
+                                // Swap positions
+                                $oldUrutan = $record->urutan;
+                                $record->update(['urutan' => $newUrutan]);
+                                $existingUser->update(['urutan' => $oldUrutan]);
+
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Urutan Ditukar')
+                                    ->body("Urutan {$record->name} dan {$existingUser->name} telah ditukar")
+                                    ->success()
+                                    ->send();
+                            } else {
+                                $record->update(['urutan' => $newUrutan]);
+
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Urutan Diperbarui')
+                                    ->success()
+                                    ->send();
+                            }
+                        } else {
+                            $record->update(['urutan' => $newUrutan]);
+                        }
                     }),
             ])
             ->bulkActions([
@@ -226,6 +339,10 @@ class UserResource extends Resource
                         ->label('Atur Akses Status')
                         ->icon('heroicon-o-adjustments-horizontal')
                         ->color('warning')
+                        ->visible(function () {
+                            $currentUser = Auth::user();
+                            return $currentUser && $currentUser instanceof User && $currentUser->urutan === 1;
+                        })
                         ->form([
                             Forms\Components\CheckboxList::make('allowed_status')
                                 ->label('Status yang Diizinkan')
@@ -240,6 +357,31 @@ class UserResource extends Resource
                                 $record->update([
                                     'allowed_status' => empty($data['allowed_status']) ? null : $data['allowed_status'],
                                 ]);
+                            });
+                        }),
+                    Tables\Actions\BulkAction::make('set_urutan')
+                        ->label('Atur Urutan Developer')
+                        ->icon('heroicon-o-queue-list')
+                        ->color('info')
+                        ->form([
+                            Forms\Components\TextInput::make('urutan')
+                                ->label('Urutan')
+                                ->numeric()
+                                ->default(0)
+                                ->helperText('0 = Tidak dalam workflow, 1+ = Urutan dalam workflow')
+                                ->required(),
+                            Forms\Components\Toggle::make('auto_increment')
+                                ->label('Auto Increment')
+                                ->helperText('Mulai dari urutan yang dimasukkan dan increment otomatis untuk setiap user')
+                                ->default(false),
+                        ])
+                        ->action(function (array $data, $records): void {
+                            $startUrutan = $data['urutan'];
+                            $autoIncrement = $data['auto_increment'];
+
+                            $records->each(function ($record, $index) use ($startUrutan, $autoIncrement) {
+                                $urutan = $autoIncrement ? $startUrutan + $index : $startUrutan;
+                                $record->update(['urutan' => $urutan]);
                             });
                         }),
                 ]),
