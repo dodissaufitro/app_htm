@@ -35,6 +35,7 @@ class User extends Authenticatable implements FilamentUser
         'password',
         'allowed_status',
         'urutan',
+        'lokasi_hunian',
     ];
 
     /**
@@ -70,6 +71,7 @@ class User extends Authenticatable implements FilamentUser
             'password' => 'hashed',
             'allowed_status' => 'array',
             'urutan' => 'integer',
+            'lokasi_hunian' => 'array',
         ];
     }
 
@@ -115,6 +117,57 @@ class User extends Authenticatable implements FilamentUser
     {
         $this->allowed_status = $statusCodes;
         $this->save();
+    }
+
+    /**
+     * Get DataHunian records that this developer handles
+     */
+    public function lokasiHunian()
+    {
+        if (empty($this->lokasi_hunian)) {
+            return collect();
+        }
+
+        return \App\Models\DataHunian::whereIn('id', $this->lokasi_hunian)->get();
+    }
+
+    /**
+     * Check if this user is a developer with specific location assignments
+     */
+    public function isDeveloperWithLocations(): bool
+    {
+        return $this->hasRole('Developer') && !empty($this->lokasi_hunian);
+    }
+
+    /**
+     * Get location names handled by this developer
+     */
+    public function getLokasiHunianNamesAttribute(): array
+    {
+        if (empty($this->lokasi_hunian)) {
+            return [];
+        }
+
+        return \App\Models\DataHunian::whereIn('id', $this->lokasi_hunian)
+            ->pluck('nama_pemukiman')
+            ->toArray();
+    }
+
+    /**
+     * Check if developer can handle specific location
+     */
+    public function canHandleLocation(int $dataHunianId): bool
+    {
+        if (!$this->hasRole('Developer')) {
+            return false;
+        }
+
+        // If no locations assigned, can handle all
+        if (empty($this->lokasi_hunian)) {
+            return true;
+        }
+
+        return in_array($dataHunianId, $this->lokasi_hunian);
     }
 
     /**

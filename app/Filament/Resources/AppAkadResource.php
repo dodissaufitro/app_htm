@@ -12,6 +12,8 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class AppAkadResource extends Resource
 {
@@ -19,13 +21,18 @@ class AppAkadResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-document-check';
 
-    protected static ?string $navigationLabel = 'Akad Kredit';
+    protected static ?string $navigationLabel = 'Approval Akad';
 
     protected static ?string $modelLabel = 'Akad Kredit';
 
     protected static ?string $pluralModelLabel = 'Akad Kredit';
 
-    protected static ?string $navigationGroup = 'Aplikasi';
+    protected static ?string $navigationGroup = 'Laporan';
+
+    protected static ?int $navigationSort = 5;
+
+    // Menambahkan policy untuk mengatur akses berdasarkan roles
+    protected static ?string $policy = \App\Policies\AppAkadPolicy::class;
 
     public static function form(Form $form): Form
     {
@@ -288,5 +295,27 @@ class AppAkadResource extends Resource
             'view' => Pages\ViewAppAkad::route('/{record}'),
             'edit' => Pages\EditAppAkad::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * Menentukan apakah resource dapat diakses berdasarkan permission
+     */
+    public static function canAccess(): bool
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return false;
+        }
+
+        // Cek permission menggunakan Laravel Gate
+        return Gate::allows('view_any_app::akad');
+    }
+
+    /**
+     * Mengecek apakah resource ditampilkan di navigasi
+     */
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess();
     }
 }

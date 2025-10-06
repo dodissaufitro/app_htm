@@ -88,7 +88,31 @@ class UserResource extends Resource
                             ->multiple()
                             ->searchable()
                             ->preload()
+                            ->live()
                             ->helperText('Pilih satu atau lebih roles untuk user ini. Roles: Super Admin (full access), Admin (manage data), Verifikator (verify), Approver (approve), Operator (input), Viewer (read-only)'),
+
+                        Forms\Components\Select::make('lokasi_hunian')
+                            ->label('Lokasi Hunian Developer')
+                            ->options(function () {
+                                return \App\Models\DataHunian::select('nama_pemukiman', 'id')
+                                    ->distinct()
+                                    ->orderBy('nama_pemukiman')
+                                    ->pluck('nama_pemukiman', 'id')
+                                    ->toArray();
+                            })
+                            ->multiple()
+                            ->searchable()
+                            ->preload()
+                            ->placeholder('Pilih lokasi hunian yang akan ditangani developer ini')
+                            ->helperText('Lokasi hunian yang akan menjadi tanggung jawab developer ini')
+                            ->visible(
+                                fn(Forms\Get $get): bool =>
+                                collect($get('roles'))->contains(
+                                    fn($roleId) =>
+                                    Role::find($roleId)?->name === 'Developer'
+                                )
+                            )
+                            ->columnSpanFull(),
                     ]),
 
                 Forms\Components\Section::make('Akses Kontrol Status')
@@ -129,37 +153,51 @@ class UserResource extends Resource
                         return $record->urutan > 0 ? 'success' : 'gray';
                     })
                     ->sortable(),
+                Tables\Columns\TagsColumn::make('lokasi_hunian_names')
+                    ->label('Lokasi Developer')
+                    ->getStateUsing(function (User $record) {
+                        if (!$record->hasRole('Developer') || empty($record->lokasi_hunian)) {
+                            return [];
+                        }
+                        return $record->lokasi_hunian_names;
+                    })
+                    ->color('info')
+                    ->separator(', ')
+                    ->limitList(2)
+                    ->expandableLimitedList()
+                    ->placeholder('Semua Lokasi')
+                    ->toggleable(),
                 Tables\Columns\TagsColumn::make('roles.name')
                     ->label('Roles')
                     ->color('info')
                     ->separator(', ')
                     ->limitList(3)
                     ->expandableLimitedList(),
-                Tables\Columns\TagsColumn::make('allowed_status_names')
-                    ->label('Status Diizinkan')
-                    ->getStateUsing(function (User $record) {
-                        if (empty($record->allowed_status)) {
-                            return ['Semua Status'];
-                        }
+                // Tables\Columns\TagsColumn::make('allowed_status_names')
+                //     ->label('Status Diizinkan')
+                //     ->getStateUsing(function (User $record) {
+                //         if (empty($record->allowed_status)) {
+                //             return ['Semua Status'];
+                //         }
 
-                        // Ensure allowed_status is an array
-                        $allowedStatus = $record->allowed_status;
-                        if (is_string($allowedStatus)) {
-                            $allowedStatus = json_decode($allowedStatus, true);
-                        }
+                //         // Ensure allowed_status is an array
+                //         $allowedStatus = $record->allowed_status;
+                //         if (is_string($allowedStatus)) {
+                //             $allowedStatus = json_decode($allowedStatus, true);
+                //         }
 
-                        if (is_array($allowedStatus) && !empty($allowedStatus)) {
-                            return Status::whereIn('kode', $allowedStatus)
-                                ->orderBy('urut')
-                                ->pluck('nama_status')
-                                ->toArray();
-                        }
+                //         if (is_array($allowedStatus) && !empty($allowedStatus)) {
+                //             return Status::whereIn('kode', $allowedStatus)
+                //                 ->orderBy('urut')
+                //                 ->pluck('nama_status')
+                //                 ->toArray();
+                //         }
 
-                        return ['Semua Status'];
-                    })
-                    ->color(function (User $record) {
-                        return empty($record->allowed_status) ? 'success' : 'primary';
-                    }),
+                //         return ['Semua Status'];
+                //     })
+                //     ->color(function (User $record) {
+                //         return empty($record->allowed_status) ? 'success' : 'primary';
+                //     }),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Dibuat')
                     ->dateTime()
@@ -196,114 +234,202 @@ class UserResource extends Resource
                 Tables\Filters\Filter::make('full_access')
                     ->label('Akses Penuh')
                     ->query(fn(Builder $query): Builder => $query->whereNull('allowed_status')),
+                Tables\Filters\Filter::make('developer_with_locations')
+                    ->label('Developer dengan Lokasi')
+                    ->query(
+                        fn(Builder $query): Builder =>
+                        $query->whereHas('roles', fn($q) => $q->where('name', 'Developer'))
+                            ->whereNotNull('lokasi_hunian')
+                    ),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('manage_roles')
-                    ->label('Kelola Roles')
-                    ->icon('heroicon-o-user-group')
-                    ->color('info')
-                    ->form([
-                        Forms\Components\Select::make('roles')
-                            ->label('Roles')
-                            ->relationship('roles', 'name')
-                            ->options(Role::all()->pluck('name', 'id'))
-                            ->multiple()
-                            ->searchable()
-                            ->preload(),
-                    ])
-                    ->fillForm(fn(User $record): array => [
-                        'roles' => $record->roles()->pluck('id')->toArray(),
-                    ])
-                    ->action(function (array $data, User $record): void {
-                        $record->syncRoles(Role::whereIn('id', $data['roles'] ?? [])->pluck('name'));
-                    }),
-                Tables\Actions\Action::make('manage_status')
-                    ->label('Kelola Status')
-                    ->icon('heroicon-o-adjustments-horizontal')
-                    ->color('warning')
-                    ->visible(function () {
-                        $currentUser = Auth::user();
-                        return $currentUser && $currentUser instanceof User && $currentUser->urutan === 1;
-                    })
-                    ->form([
-                        Forms\Components\CheckboxList::make('allowed_status')
-                            ->label('Status yang Diizinkan')
-                            ->options(function () {
-                                return Status::orderBy('urut')->pluck('nama_status', 'kode')->toArray();
-                            })
-                            ->descriptions(function () {
-                                return Status::orderBy('urut')->pluck('keterangan', 'kode')->toArray();
-                            })
-                            ->columns(2)
-                            ->helperText('Kosongkan untuk memberikan akses ke semua status'),
-                    ])
-                    ->fillForm(fn(User $record): array => [
-                        'allowed_status' => $record->allowed_status ?? [],
-                    ])
-                    ->action(function (array $data, User $record): void {
-                        $record->update([
-                            'allowed_status' => empty($data['allowed_status']) ? null : $data['allowed_status'],
-                        ]);
-                    }),
-                Tables\Actions\Action::make('set_urutan')
-                    ->label('Atur Urutan')
-                    ->icon('heroicon-o-queue-list')
-                    ->color('info')
-                    ->form([
-                        Forms\Components\TextInput::make('urutan')
-                            ->label('Urutan Developer')
-                            ->numeric()
-                            ->default(fn(User $record) => $record->urutan)
-                            ->helperText('0 = Tidak dalam workflow, 1+ = Urutan dalam workflow')
-                            ->required(),
-                        Forms\Components\Placeholder::make('current_workflow')
-                            ->label('Workflow Saat Ini')
-                            ->content(function () {
-                                $workflowUsers = User::getDeveloperWorkflowUsers();
-                                if ($workflowUsers->isEmpty()) {
-                                    return 'Belum ada user dalam workflow';
-                                }
-                                return $workflowUsers->map(fn($u) => "{$u->urutan}. {$u->name}")->join('<br>');
-                            })
-                            ->extraAttributes(['class' => 'text-sm']),
-                    ])
-                    ->fillForm(fn(User $record): array => [
-                        'urutan' => $record->urutan,
-                    ])
-                    ->action(function (array $data, User $record): void {
-                        $newUrutan = $data['urutan'];
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\ViewAction::make()
+                        ->label('Lihat Detail')
+                        ->icon('heroicon-o-eye')
+                        ->color('info')
+                        ->tooltip('Lihat detail lengkap user'),
 
-                        // Check if urutan is already taken and handle swapping
-                        if ($newUrutan > 0) {
-                            $existingUser = User::where('urutan', $newUrutan)
-                                ->where('id', '!=', $record->id)
-                                ->first();
+                    Tables\Actions\EditAction::make()
+                        ->label('Edit User')
+                        ->icon('heroicon-o-pencil-square')
+                        ->color('warning')
+                        ->tooltip('Edit informasi user'),
 
-                            if ($existingUser) {
-                                // Swap positions
-                                $oldUrutan = $record->urutan;
-                                $record->update(['urutan' => $newUrutan]);
-                                $existingUser->update(['urutan' => $oldUrutan]);
+                    Tables\Actions\Action::make('manage_roles')
+                        ->label('Kelola Roles')
+                        ->icon('heroicon-o-user-group')
+                        ->color('success')
+                        ->tooltip('Kelola roles dan permissions user')
+                        ->modalHeading(fn(User $record) => 'Kelola Roles - ' . $record->name)
+                        ->modalDescription('Atur roles yang dimiliki oleh user ini. Roles menentukan hak akses dan permissions user dalam sistem.')
+                        ->modalIcon('heroicon-o-user-group')
+                        ->modalWidth('lg')
+                        ->form([
+                            Forms\Components\Section::make('Informasi User')
+                                ->schema([
+                                    Forms\Components\Grid::make(2)
+                                        ->schema([
+                                            Forms\Components\Placeholder::make('name')
+                                                ->label('Nama User')
+                                                ->content(fn(User $record) => $record->name),
+                                            Forms\Components\Placeholder::make('email')
+                                                ->label('Email')
+                                                ->content(fn(User $record) => $record->email),
+                                        ]),
+                                    Forms\Components\Placeholder::make('current_roles')
+                                        ->label('Roles Saat Ini')
+                                        ->content(fn(User $record) => $record->roles->count() > 0 ?
+                                            $record->roles->pluck('name')->map(fn($role) => "• {$role}")->join("\n") :
+                                            'Belum memiliki roles')
+                                        ->extraAttributes(['style' => 'white-space: pre-line; background: #f3f4f6; padding: 8px; border-radius: 6px;']),
+                                ])
+                                ->collapsible()
+                                ->collapsed(),
 
-                                \Filament\Notifications\Notification::make()
-                                    ->title('Urutan Ditukar')
-                                    ->body("Urutan {$record->name} dan {$existingUser->name} telah ditukar")
-                                    ->success()
-                                    ->send();
-                            } else {
-                                $record->update(['urutan' => $newUrutan]);
+                            Forms\Components\Section::make('Pengaturan Roles')
+                                ->description('Pilih roles yang akan diberikan kepada user ini.')
+                                ->icon('heroicon-o-shield-check')
+                                ->schema([
+                                    Forms\Components\Select::make('roles')
+                                        ->label('Roles')
+                                        ->relationship('roles', 'name')
+                                        ->options(Role::all()->pluck('name', 'id'))
+                                        ->multiple()
+                                        ->searchable()
+                                        ->preload()
+                                        ->native(false)
+                                        ->placeholder('Pilih roles untuk user ini')
+                                        ->helperText('Roles tersedia: Super Admin (akses penuh), Admin (kelola data), Verifikator (verifikasi), Approver (approve), Operator (input), Viewer (baca saja)')
+                                        ->live()
+                                        ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                            if ($state) {
+                                                $roleNames = Role::whereIn('id', $state)->pluck('name')->join(', ');
+                                                $set('role_preview', $roleNames);
+                                            }
+                                        }),
 
-                                \Filament\Notifications\Notification::make()
-                                    ->title('Urutan Diperbarui')
-                                    ->success()
-                                    ->send();
-                            }
-                        } else {
-                            $record->update(['urutan' => $newUrutan]);
-                        }
-                    }),
+                                    Forms\Components\Placeholder::make('role_preview')
+                                        ->label('Preview Roles Terpilih')
+                                        ->content(fn($get) => $get('role_preview') ?: 'Belum ada roles yang dipilih')
+                                        ->visible(fn($get) => !empty($get('roles')))
+                                        ->extraAttributes(['style' => 'background: #dbeafe; padding: 8px; border-radius: 6px; color: #1e40af;']),
+                                ]),
+                        ])
+                        ->fillForm(fn(User $record): array => [
+                            'roles' => $record->roles()->pluck('id')->toArray(),
+                            'role_preview' => $record->roles->pluck('name')->join(', '),
+                        ])
+                        ->action(function (array $data, User $record): void {
+                            $oldRoles = $record->roles->pluck('name')->toArray();
+                            $newRoles = Role::whereIn('id', $data['roles'] ?? [])->pluck('name')->toArray();
+
+                            $record->syncRoles($newRoles);
+
+                            \Filament\Notifications\Notification::make()
+                                ->title('Roles Berhasil Diperbarui')
+                                ->body("Roles user {$record->name} telah diperbarui")
+                                ->success()
+                                ->duration(5000)
+                                ->send();
+                        }),
+
+                    Tables\Actions\Action::make('manage_status')
+                        ->label('Kelola Status')
+                        ->icon('heroicon-o-adjustments-horizontal')
+                        ->color('purple')
+                        ->tooltip('Atur status yang dapat diakses user')
+                        ->visible(function () {
+                            $currentUser = Auth::user();
+                            return $currentUser && $currentUser instanceof User && $currentUser->urutan === 1;
+                        })
+                        ->modalHeading(fn(User $record) => 'Kelola Akses Status - ' . $record->name)
+                        ->modalDescription('Atur status mana saja yang dapat diakses oleh user ini. Jika tidak ada yang dipilih, user dapat mengakses semua status.')
+                        ->modalIcon('heroicon-o-adjustments-horizontal')
+                        ->modalWidth('2xl')
+                        ->form([
+                            Forms\Components\Section::make('Status Akses Saat Ini')
+                                ->schema([
+                                    Forms\Components\Placeholder::make('current_access')
+                                        ->label('Akses Saat Ini')
+                                        ->content(function (User $record) {
+                                            if (empty($record->allowed_status)) {
+                                                return 'User memiliki akses ke SEMUA STATUS';
+                                            }
+
+                                            $allowedStatus = is_string($record->allowed_status) ?
+                                                json_decode($record->allowed_status, true) :
+                                                $record->allowed_status;
+
+                                            $statusNames = Status::whereIn('kode', $allowedStatus)
+                                                ->orderBy('urut')
+                                                ->pluck('nama_status')
+                                                ->toArray();
+
+                                            return 'User hanya dapat mengakses: ' . implode(', ', $statusNames);
+                                        })
+                                        ->extraAttributes(['style' => 'background: #f9fafb; padding: 12px; border-radius: 8px; border: 1px solid #6366f1;']),
+                                ])
+                                ->collapsible()
+                                ->collapsed(),
+
+                            Forms\Components\Section::make('Pengaturan Akses Status')
+                                ->description('Pilih status yang dapat diakses oleh user ini.')
+                                ->icon('heroicon-o-lock-closed')
+                                ->schema([
+                                    Forms\Components\CheckboxList::make('allowed_status')
+                                        ->label('Status yang Diizinkan')
+                                        ->options(function () {
+                                            return Status::orderBy('urut')->pluck('nama_status', 'kode')->toArray();
+                                        })
+                                        ->descriptions(function () {
+                                            return Status::orderBy('urut')->pluck('keterangan', 'kode')->toArray();
+                                        })
+                                        ->columns(2)
+                                        ->gridDirection('row')
+                                        ->helperText('Kosongkan semua pilihan untuk memberikan akses ke SEMUA STATUS')
+                                        ->live()
+                                        ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                            if (empty($state)) {
+                                                $set('access_preview', 'Akses penuh ke semua status');
+                                            } else {
+                                                $statusNames = Status::whereIn('kode', $state)
+                                                    ->orderBy('urut')
+                                                    ->pluck('nama_status')
+                                                    ->toArray();
+                                                $set('access_preview', 'Akses terbatas ke: ' . implode(', ', $statusNames));
+                                            }
+                                        }),
+
+                                    Forms\Components\Placeholder::make('access_preview')
+                                        ->label('Preview Akses')
+                                        ->content(fn($get) => $get('access_preview') ?? 'Akses penuh ke semua status')
+                                        ->extraAttributes(['style' => 'background: #ecfdf5; padding: 10px; border-radius: 6px; border: 1px solid #10b981; color: #065f46;']),
+                                ])
+                        ])
+                        ->fillForm(fn(User $record): array => [
+                            'allowed_status' => $record->allowed_status ?? [],
+                        ])
+                        ->action(function (array $data, User $record): void {
+                            $record->update([
+                                'allowed_status' => empty($data['allowed_status']) ? null : $data['allowed_status'],
+                            ]);
+
+                            \Filament\Notifications\Notification::make()
+                                ->title('Akses Status Berhasil Diperbarui')
+                                ->body("Akses status user {$record->name} telah diperbarui")
+                                ->success()
+                                ->duration(5000)
+                                ->send();
+                        }),
+
+                    
+                ])
+                    ->label('Aksi')
+                    ->icon('heroicon-o-ellipsis-vertical')
+                    ->size('sm')
+                    ->color('gray')
+                    ->button(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

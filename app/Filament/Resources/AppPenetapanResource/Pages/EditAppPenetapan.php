@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Filament\Resources\AppVerifikatorResource\Pages;
+namespace App\Filament\Resources\AppPenetapanResource\Pages;
 
-use App\Filament\Resources\AppVerifikatorResource;
+use App\Filament\Resources\AppPenetapanResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
-class EditAppVerifikator extends EditRecord
+class EditAppPenetapan extends EditRecord
 {
-    protected static string $resource = AppVerifikatorResource::class;
+    protected static string $resource = AppPenetapanResource::class;
 
     protected function getHeaderActions(): array
     {

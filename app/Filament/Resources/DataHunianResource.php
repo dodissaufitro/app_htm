@@ -234,26 +234,46 @@ class DataHunianResource extends Resource
                     }),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('lihat_proyeksi')
-                    ->label('Lihat Proyeksi')
-                    ->icon('heroicon-o-chart-bar')
-                    ->color('info')
-                    ->modalHeading('Proyeksi Harga')
-                    ->modalDescription('Proyeksi harga hunian untuk berbagai periode tahun')
-                    ->modalContent(function ($record) {
-                        return view('components.proyeksi-modal', [
-                            'harga_awal' => $record->harga,
-                            'tahun5' => $record->tahun5,
-                            'tahun10' => $record->tahun10,
-                            'tahun15' => $record->tahun15,
-                            'tahun20' => $record->tahun20,
-                            'nama_pemukiman' => $record->nama_pemukiman,
-                            'tipe_hunian' => $record->tipe_hunian,
-                        ]);
-                    })
-                    ->modalWidth('2xl'),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\ViewAction::make()
+                        ->label('Lihat Detail')
+                        ->icon('heroicon-o-eye')
+                        ->color('info')
+                        ->tooltip('Lihat detail hunian'),
+
+                    Tables\Actions\EditAction::make()
+                        ->label('Edit Data')
+                        ->icon('heroicon-o-pencil-square')
+                        ->color('warning')
+                        ->tooltip('Edit data hunian'),
+
+                    Tables\Actions\Action::make('lihat_proyeksi')
+                        ->label('Proyeksi Harga')
+                        ->icon('heroicon-o-chart-bar-square')
+                        ->color('success')
+                        ->tooltip('Lihat proyeksi harga hunian')
+                        ->modalHeading(fn($record) => 'Proyeksi Harga - ' . $record->nama_pemukiman)
+                        ->modalDescription('Proyeksi harga hunian untuk berbagai periode tahun ke depan')
+                        ->modalContent(function ($record) {
+                            return view('components.proyeksi-modal', [
+                                'harga_awal' => $record->harga,
+                                'tahun5' => $record->tahun5,
+                                'tahun10' => $record->tahun10,
+                                'tahun15' => $record->tahun15,
+                                'tahun20' => $record->tahun20,
+                                'nama_pemukiman' => $record->nama_pemukiman,
+                                'tipe_hunian' => $record->tipe_hunian,
+                            ]);
+                        })
+                        ->modalWidth('3xl')
+                        ->modalIcon('heroicon-o-chart-bar-square')
+                        ->modalIconColor('success'),
+                ])
+                    ->label('Aksi')
+                    ->icon('heroicon-m-ellipsis-vertical')
+                    ->size('sm')
+                    ->color('gray')
+                    ->button(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
